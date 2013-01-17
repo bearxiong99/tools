@@ -30,7 +30,7 @@
 #       add spaces for linenumbering so that the start lines line up
 #       make explicit line-numbering at start of print optional
 #       make colors optional through option
-#       better, ie more flexible, arguments parsing
+#       better, ie more flexible, arguments parsing with argparse
 # 
 import sys
 import os
@@ -49,20 +49,27 @@ use_color = True
 #use_color = False
 
 #-------------------------------------------------------------------------------
-def bailout(errstr = "", exitcode = 1):
-  print("Print lines in the middle of a file; like a combination of 'head' and 'tail' in Linux")
-  print("usage: " + sys.argv[0] + " LINESTART <LINEEND> FILE")
-  print("Examples:----------")
-  print("  Print line 17--67 from helloworld.c")
-  print("     " + sys.argv[0] + " 17 50 helloworld.c")
-  print("")
-  print("  Print line 17--20 from helloworld.c")
-  print("     " + sys.argv[0] + " 17 e20 helloworld.c")
-  print("")
-  print("  Print line 17--37 from helloworld.c (per default 20 lines are read)")
-  print("     " + sys.argv[0] + " 17 helloworld.c")
-  print("")
-  print("*** Error ***: " + errstr),
+def bailout(errstr = "", exitcode = 0):
+  if exitcode != 0:
+    print("Print lines in the middle of a file; like a combination of 'head' and 'tail' in Linux")
+    print("usage: " + sys.argv[0] + " LINESTART <LINEEND> FILE")
+    print("Examples:----------")
+    print("  Print line 17--67 from helloworld.c")
+    print("     " + sys.argv[0] + " 17 50 helloworld.c")
+    print("")
+    print("  Print line 17--20 from helloworld.c")
+    print("     " + sys.argv[0] + " 17 e20 helloworld.c")
+    print("")
+    print("  Print line 17--37 from helloworld.c (per default 20 lines are read)")
+    print("     " + sys.argv[0] + " 17 helloworld.c")
+    print("")
+    print("  Print line 17--end of helloworld.c (effectively 'tail')")
+    print("     " + sys.argv[0] + " 17 - helloworld.c")
+    print("")
+    print("  Print line 1--17 of helloworld.c (effectively 'head')")
+    print("     " + sys.argv[0] + " - 17 - helloworld.c")
+    print("")
+    print("*** Error ***: " + errstr),
   sys.exit(exitcode)
 # ------------------------------------------------------------------------------
 def main():
@@ -84,7 +91,7 @@ def main():
   # number of arguments
   if len(sys.argv) == 1:
     # nothing to do here, carry on
-    sys.exit(EXECUTION_SUCCESS)
+    bailout("", EXECUTION_SUCCESS)
   if len(sys.argv) < 3:
     bailout("too few args", ERR_ARGS_TOO_FEW_OR_MANY)
   if len(sys.argv) > 4:
@@ -93,23 +100,29 @@ def main():
 
   # lines to print
   try:
-    linestart = int(sys.argv[1])
+    if sys.argv[1].count('-') > 0:
+      linestart = 0
+    else:
+      linestart = int(sys.argv[1])
+      if linestart <= 0:
+        bailout("linestart must be > 0", ERR_ARGS_INTEGER_ERROR)
   except:
     bailout("linestart must be an integer", ERR_ARGS_INTEGER_ERROR)
-  if linestart <= 0:
-    bailout("linestart must be > 0", ERR_ARGS_INTEGER_ERROR)
+
   lineend = DEFAULT_LINES_TO_READ
   if len(sys.argv) > 3:
     # end can be absolute (if prefixed with e, eg 'e38') or relative
     try:
       if sys.argv[2].count('e') > 0:
         lineend = int(sys.argv[2].replace('e',''))
+      elif sys.argv[2].count('-') > 0:
+        lineend = 0
       else:
         lineend = int(sys.argv[2])
         lineend = linestart + lineend
     except:
       bailout("lineend must be an integer", ERR_ARGS_INTEGER_ERROR)
-    if lineend < linestart:
+    if lineend < linestart and lineend != 0:
       bailout("lineend is absolute, but smaller than start", ERR_ARGS_INTEGER_ERROR)
 
 
@@ -122,6 +135,7 @@ def main():
     bailout("file does not exist", ERR_ARGS_FILE_DOES_NOT_EXIST)
 
   # read the input file------------------------------
+  # this will be used for left-adjustment of line number
   if lineend > 100000:
     maxspace = 6
   elif lineend > 10000:
@@ -146,17 +160,21 @@ def main():
 #            print(" " * (maxspace - 2))
           print(GRN + str(k) + ": " + NRM),
           print(line),
-
-        if i >= (lineend - 1):
-          break
+        if lineend != 0:
+          if i >= (lineend - 1):
+            break
 
     # done
     fp.close()    
-    sys.exit(EXECUTION_SUCCESS)
+    bailout("", EXECUTION_SUCCESS)
 
-  except:
-    fp.close()    
-    sys.exit(ERR_FILE_READ_ERROR)
+  except Exception:
+    # having 'Exception' makes it not catch system exceptions like keyboard etc,
+    # as they are derived directly from exceptions.BaseException, not exceptions.Exception
+    fp.close()
+    print(Exception)
+#    sys.exit(ERR_FILE_READ_ERROR)
+    bailout("error while reading file", ERR_FILE_READ_ERROR)
 
 # ------------------------------------------------------------------------------
 if __name__=="__main__":
