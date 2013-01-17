@@ -31,7 +31,33 @@
 #       make explicit line-numbering at start of print optional
 #       make colors optional through option
 #       better, ie more flexible, arguments parsing with argparse
+'''
+    import argparse
+    parser = argparse.ArgumentParser(description='Tool for extracting genes')
+    parser.add_argument('infile', help='source file with the genes')
+    parser.add_argument('outfile', help='outfile file in a FASTA format')
+    parser.add_argument('-s', '--spliced', action='store_true', help='remove introns')
+'''    
+#       use try/catch/raise instead of bailout()
+'''
+    try:
+      sth
+    raise Exception('spam', 'eggs')
+    except Exception as inst:
+    print type(inst)     # the exception instance
+      <type 'exceptions.Exception'>
+    print inst.args      # arguments stored in .args
+      ('spam', 'eggs')
+    x, y = inst.args
+    print 'x =', x
+    print 'y =', y
+      x = spam
+      y = eggs
+'''
 # 
+# 
+# 
+
 import sys
 import os
 
