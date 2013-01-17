@@ -5,6 +5,7 @@ I was too lazy to enter 'grep -r "search term" *' so I just wrote this quick wra
 It just recursively greps the search term with some proper grep arguments.
 
 Example
+
 	findme hello
 	recursively searches ./* for "hello"
 
